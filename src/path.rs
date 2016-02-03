@@ -7,15 +7,28 @@ use std::{mem, fmt};
 use std::ops::{Deref};
 use std::borrow::{Borrow, ToOwned, Cow};
 
+/// An owned path string.
+///
+/// See [Path](struct.Path.html) for details.
 #[derive(Clone)]
 pub struct PathBuf {
     inner: String
 }
 
+/// A path reference.
+///
+/// This path type is modeled on `std::path::Path`, with two crucial
+/// differences: it always uses `/` as a seperator, and all paths are
+/// treated as relative. So, "/a/b" and "a/b" represent the same
+/// path. If you'd like, you can think of each path as a sequence of
+/// strings, with no other structure.
 pub struct Path {
     inner: str
 }
 
+/// An iterator over components of a path.
+///
+/// This is produced by [Path::components()](struct.Path.html#method.components).
 #[derive(Clone)]
 pub struct Components<'a> {
     path: &'a [u8],
