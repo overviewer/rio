@@ -156,6 +156,12 @@ impl Path {
         }
     }
 
+    pub fn join<P: AsRef<Path>>(&self, path: P) -> PathBuf {
+        let mut owned = self.to_owned();
+        owned.push(path);
+        owned
+    }
+
     pub fn file_name(&self) -> Option<&str> {
         self.components().next_back().map(|p| p.as_ref())
     }
@@ -374,5 +380,14 @@ mod test {
         assert_eq!(Path::new("/a/b/cde").file_name(), Some("cde"));
         assert_eq!(Path::new("/").file_name(), None);
         assert_eq!(Path::new("").file_name(), None);
+    }
+
+    #[test]
+    fn path_join() {
+        let a = Path::new("/a/b");
+        let b = Path::new("/a/b/");
+        let c = PathBuf::from("/a/b/c");
+        assert_eq!(a.join("c").as_str(), c.as_str());
+        assert_eq!(b.join("c").as_str(), c.as_str());
     }
 }
