@@ -1,6 +1,7 @@
-use std::{path, fs};
-use path::{Path};
-use fs::{FSRead, Result};
+use std::{path, fs, io};
+use std::convert::From;
+use path::{Path, PathBuf};
+use fs::{FSRead, Result, FileType, QPath};
 
 /// A native, local filesystem.
 ///
@@ -22,24 +23,56 @@ impl Native {
         }
         return p;
     }
+
+    fn unpath<P: AsRef<path::Path>>(&self, path: P) -> Option<PathBuf> {
+        path.as_ref().relative_from(&self.inner).and_then(|p| p.to_str()).map(From::from)
+    }
 }
 
-impl FSRead for Native {
+pub struct ReadDir<'a> {
+    iter: fs::ReadDir,
+    parent: &'a Native,
+}
+
+impl<'a> Iterator for ReadDir<'a> {
+    type Item = QPath<'a, Native>;
+
+    fn next(&mut self) -> Option<QPath<'a, Native>> {
+        loop {
+            if let Some(res) = self.iter.next() {
+                let conv = res.ok().and_then(|r| self.parent.unpath(r.path()));
+                if let Some(p) = conv {
+                    return Some(self.parent.qualified(p));
+                }
+            } else {
+                return None;
+            }
+        }
+    }
+}
+
+impl<'a> FSRead<'a> for Native {
     type ReadFile = fs::File;
 
     fn open<P: AsRef<Path>>(&self, path: P) -> Result<fs::File> {
         fs::File::open(self.path(path))
     }
 
-    fn exists<P: AsRef<Path>>(&self, path: P) -> bool {
-        self.path(path).exists()
+    fn file_type<P: AsRef<Path>>(&self, path: P) -> Result<FileType> {
+        let p = self.path(path);
+        if p.exists() {
+            if p.is_file() {
+                return Ok(FileType::File);
+            } else if p.is_dir() {
+                return Ok(FileType::Dir);
+            }
+        }
+        return Err(io::Error::new(io::ErrorKind::NotFound, "File not found."));
     }
 
-    fn is_file<P: AsRef<Path>>(&self, path: P) -> bool {
-        self.path(path).is_file()
-    }
+    type ReadDir = ReadDir<'a>;
 
-    fn is_dir<P: AsRef<Path>>(&self, path: P) -> bool {
-        self.path(path).is_dir()
+    fn read_dir<P: AsRef<Path>>(&self, path: P) -> Result<ReadDir> {
+        self.path(path).read_dir().map(|dirs| ReadDir { iter: dirs, parent: self })
     }
 }
