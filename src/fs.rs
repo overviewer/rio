@@ -71,35 +71,39 @@ impl<'a, T: ?Sized + FSRead<'a>> QPath<'a, T> {
         self.path.as_ref()
     }
 
+    pub fn open(&self) -> Result<T::ReadFile> {
+        self.parent.open(&self.path)
+    }
+
     pub fn file_type(&self) -> Result<FileType> {
-        self.parent.file_type(self.path())
+        self.parent.file_type(&self.path)
     }
 
     pub fn exists(&self) -> bool {
-        self.parent.exists(self.path())
+        self.parent.exists(&self.path)
     }
 
     pub fn is_file(&self) -> bool {
-        self.parent.is_file(self.path())
+        self.parent.is_file(&self.path)
     }
 
     pub fn is_dir(&self) -> bool {
-        self.parent.is_dir(self.path())
+        self.parent.is_dir(&self.path)
     }
 
     pub fn read_dir(&self) -> Result<T::ReadDir> {
-        self.parent.read_dir(self.path())
+        self.parent.read_dir(&self.path)
     }
 }
 
 /// Operations for readable file systems.
 pub trait FSRead<'a> : 'a{
-    type ReadFile: io::Read;
-    fn open<P: AsRef<Path>>(&self, path: P) -> Result<Self::ReadFile>;
-
     fn qualified<P: AsRef<Path>>(&'a self, path: P) -> QPath<'a, Self> {
         QPath { path: path.as_ref().to_owned(), parent: self }
     }
+
+    type ReadFile: io::Read;
+    fn open<P: AsRef<Path>>(&self, path: P) -> Result<Self::ReadFile>;
 
     // fn metadata<P: AsRef<Path>>(&self, path: P) -> Result<Metadata>;
     fn file_type<P: AsRef<Path>>(&self, path: P) -> Result<FileType>;
