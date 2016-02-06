@@ -166,6 +166,19 @@ impl Path {
         self.components().next_back().map(|p| p.as_ref())
     }
 
+    pub fn extension(&self) -> Option<&str> {
+        self.file_name().and_then(|fname| {
+            let mut s = fname.rsplit('.');
+            let ext = s.next();
+            if s.next().is_some() {
+                ext
+            } else {
+                None
+            }
+
+        })
+    }
+
     pub fn components(&self) -> Components {
         Components { path: self.as_u8_slice(), i: 0, j: self.inner.len() }
     }
@@ -389,5 +402,14 @@ mod test {
         let c = PathBuf::from("/a/b/c");
         assert_eq!(a.join("c").as_str(), c.as_str());
         assert_eq!(b.join("c").as_str(), c.as_str());
+    }
+
+    #[test]
+    fn path_extension() {
+        assert_eq!(Path::new("/a/b/c.txt").extension(), Some("txt"));
+        assert_eq!(Path::new("/a/b/c.txt.png").extension(), Some("png"));
+        assert_eq!(Path::new("/a/b/c.").extension(), Some(""));
+        assert_eq!(Path::new("/a/b.txt/c").extension(), None);
+        assert_eq!(Path::new("/").extension(), None);
     }
 }
