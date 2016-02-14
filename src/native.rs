@@ -1,7 +1,10 @@
+#[cfg(test)]
+extern crate tempdir;
+
 use std::{path, fs, io};
 use std::convert::From;
 use path::{Path, PathBuf};
-use fs::{FSRead, Result, FileType, QPath};
+use fs::{FSRead, FSWrite, Result, FileType, QPath};
 
 /// A native, local filesystem.
 ///
@@ -75,4 +78,48 @@ impl<'a> FSRead<'a> for Native {
     fn read_dir<P: AsRef<Path>>(&self, path: P) -> Result<ReadDir> {
         self.path(path).read_dir().map(|dirs| ReadDir { iter: dirs, parent: self })
     }
+}
+
+impl<'a> FSWrite<'a> for Native {
+    type WriteFile = fs::File;
+
+    fn create<P: AsRef<Path>>(&self, path: P) -> Result<fs::File> {
+        fs::File::create(self.path(path))
+    }
+    
+    fn append<P: AsRef<Path>>(&self, path: P) -> Result<fs::File> {
+        use std::fs::OpenOptions;
+
+        OpenOptions::new().read(false).write(true).create(false).append(true).open(self.path(path))
+    }
+
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ::{FSWrite, FSRead};
+    use super::tempdir::TempDir;
+    use std::io::{Write, Read};
+
+
+    #[test]
+    fn native_readwrite() {
+        let t = TempDir::new("riotest").unwrap();
+        let n = Native::new(t.path());
+        {
+        let mut f = n.create("foo").unwrap();
+
+        f.write("test".as_bytes());
+        }
+        {
+            let mut f = n.open("foo").unwrap();
+            let mut v = Vec::new();
+            f.read_to_end(&mut v);
+            assert_eq!(v, "test".as_bytes());
+        }
+
+    }
+
 }

@@ -256,6 +256,24 @@ impl Into<String> for PathBuf {
     }
 }
 
+impl From<::std::path::PathBuf> for PathBuf {
+    fn from(p: ::std::path::PathBuf) -> PathBuf {
+        let mut pb = PathBuf::new();
+        for c in p.components() {
+            match c {
+                ::std::path::Component::Normal(n) => {
+                    let _p = n.to_string_lossy();
+                    let _pb: &str = _p.borrow();
+                    pb.push(_pb)
+                }
+                _ => {}
+            }
+        }
+        pb
+        
+    }
+}
+
 impl fmt::Debug for Path {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         self.inner.fmt(formatter)

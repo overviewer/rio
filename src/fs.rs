@@ -123,3 +123,19 @@ pub trait FSRead<'a> : 'a{
     type ReadDir: Iterator<Item=QPath<'a, Self>>;
     fn read_dir<P: AsRef<Path>>(&'a self, path: P) -> Result<Self::ReadDir>;
 }
+
+/// Operations for a writeable file system
+pub trait FSWrite<'a> : 'a {
+    /// The concrete type for writable files
+    type WriteFile: io::Write;
+
+    /// This function will create a file if it does not exist, and will truncate it if it does.
+    fn create<P: AsRef<Path>>(&self, path: P) -> Result<Self::WriteFile>;
+
+    /// This function will append to an already existing file.
+    ///
+    /// If the file doesn't exist, an error is returned.
+    fn append<P: AsRef<Path>>(&self, path: P) -> Result<Self::WriteFile>;
+
+
+}

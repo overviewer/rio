@@ -1,6 +1,10 @@
 [package]
 name = "rio"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Aaron Griffith <aargri@gmail.com>"]
 
 [dependencies]
+
+
+[dev-dependencies]
+tempdir = "0.3"
